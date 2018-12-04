@@ -57,12 +57,23 @@ def ultrasound(ultraSoundNum):
 	ultraSoundValue = (ser.readline().decode("ascii"))
 	return int(ultraSoundValue.rstrip())
 
+def allUltra():
+        arr = []
+        for i in range(6):
+                arr[i] = ultrasound(i)
+        return arr
+
 def infrared(infraredNum):
 	ser.reset_input_buffer()
 	ser.write(("i %d \r" % (infraredNum)).encode())
 	infraredValue = (ser.readline().decode("ascii"))
 	return infraredValue.rstrip()
 
+def allInfra():
+        arr = []
+        for i in range(4):
+                arr[i] = infrared(i)
+        return arr
 
 def rpm(rpmNum):
 	ser.reset_input_buffer()
@@ -169,7 +180,8 @@ def goToGoalTimed(dx,dy,dtheta,duration):
 	start = time.time()
 	
 	while time.time()-float(start) <= float(duration):
-		xc = current_x;yc=current_y;thetac = current_theta
+                runLoop()
+                xc = current_x;yc=current_y;thetac = current_theta
 
 		inv_rotation_mat = np.array([np.cos(thetac), np.sin(thetac), 0, -np.sin(thetac), np.cos(thetac), 0, 0, 0, 1]).reshape(3,3)
 		
@@ -201,6 +213,23 @@ def goToGoalTimed(dx,dy,dtheta,duration):
 
 	move(0,0,0)
 
+minDistI = 58
+minDistU = 50
+
+def runLoop():
+        while True:
+                for dist in allUltra():
+                        if dist < minDistU:
+                                stop()
+                for dist in allInfra():
+                        if dist < minDistI:
+                                stop()
+
+
+def stop():
+        exit()
+        goToGoalTimed(0,0,0,0)
+        
 #def exitt():
  #       goToGoalTimed(0,0,0,0)		
 
