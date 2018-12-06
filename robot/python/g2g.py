@@ -1,4 +1,3 @@
-#import atexit
 import serial
 import math
 import time
@@ -174,16 +173,31 @@ def initOdometry():
 	oldEncoder1 = encoder(1)
 	oldEncoder2 = encoder(2)
 
+def tooClose():
+        #is anything too close
+
+        #if so then avoid
+
+def isAtGoal(xd, yd):
+        return xd is current_x and yd is current_y
+
+def speed(duration, xd, xc, yd, yc):
+        dist = np.sqrt(np.power((xd-xc), 2) + np.power(yd-yc, 2))
+        timeleft = dist*2
+        
 def goToGoalTimed(dx,dy,dtheta,duration):
 	global current_x
 	global current_y
 	global current_theta
 	dt = 0.1
 	start = time.time()
-
-	while time.time()-float(start) <= float(duration):
-                runLoop()
-                xc = current_x;yc=current_y;thetac = current_theta
+        speed = speed(duration, xd, current_x, yd, current_y)
+        while time.time()-float(start) <= float(speed): 
+                if tooClose():
+                        break
+                xc = current_x
+                yc=current_y
+                thetac = current_theta
 
 		inv_rotation_mat = np.array([np.cos(thetac), np.sin(thetac), 0, -np.sin(thetac), np.cos(thetac), 0, 0, 0, 1]).reshape(3,3)
 
@@ -198,7 +212,7 @@ def goToGoalTimed(dx,dy,dtheta,duration):
                   #             [0,0,1]]
 		vel_local = np.dot(inv_rotation_mat, vel_global)#calculate the local velocity as input to the inverse kinematics algorithm
 
-		time_left = duration - (time.time() - start) #duration - time elapsed = time left
+		time_left = speed - (time.time() - start) #duration - time elapsed = time left
 		vl_x = vel_local[0] / time_left
 		vl_y = vel_local[1] / time_left
 		vl_theta = vel_local[2] / time_left
@@ -222,4 +236,5 @@ while True:
 	yd = float(input("enter y desired: "))
 	thetad = float(input("enter theta desired: "))
 	duration = int(input("duration (s): "))
-	goToGoalTimed(xd,yd,thetad,duration)
+        while (isAtGoal(xd,yd)):
+	       goToGoalTimed(xd,yd,thetad,duration)
