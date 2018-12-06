@@ -48,15 +48,17 @@ def encoder(encoderNum):
 	ser.reset_input_buffer()
 	ser.write(("e %d \r" % (encoderNum)).encode())
 
-	encoderValue = (ser.readline().decode("ascii"))
+	encoderValue = (ser.readline().decode())
 	return int(encoderValue.rstrip())
 
 def ultrasound(ultraSoundNum):
 	ser.reset_input_buffer()
 	ser.write(("u %d \r" % (ultraSoundNum)).encode())
-	ultraSoundValue = (ser.readline().decode("ascii"))
-	return int(ultraSoundValue.rstrip())
-
+        ultraSoundValue = (ser.readline().decode())
+        try:
+                return int(ultraSoundValue.rstrip())
+        except: ValueError:
+                return -1
 def allUltra():
         arr = []
         for i in range(6):
@@ -66,7 +68,7 @@ def allUltra():
 def infrared(infraredNum):
 	ser.reset_input_buffer()
 	ser.write(("i %d \r" % (infraredNum)).encode())
-	infraredValue = (ser.readline().decode("ascii"))
+	infraredValue = (ser.readline().decode())
 	return infraredValue.rstrip()
 
 def allInfra():
@@ -78,7 +80,7 @@ def allInfra():
 def rpm(rpmNum):
 	ser.reset_input_buffer()
 	ser.write(("r %f \r" % (rpmNum)).encode())
-	rpmValue = (ser.readline().decode("ascii"))
+	rpmValue = (ser.readline().decode())
 	return rpmValue.rstrip()
 
 def enablePID(pidValue):

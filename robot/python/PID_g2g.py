@@ -42,26 +42,26 @@ def encoder(encoderNum):
 	ser.reset_input_buffer()
 	ser.write(("e %d \r" % (encoderNum)).encode())
 
-	encoderValue = (ser.readline().decode("ascii"))
+	encoderValue = (ser.readline().decode())
 	return int(encoderValue.rstrip())
 
 def ultrasound(ultraSoundNum):
 	ser.reset_input_buffer()
 	ser.write(("u %d \r" % (ultraSoundNum)).encode())
-	ultraSoundValue = (ser.readline().decode("ascii"))
+	ultraSoundValue = (ser.readline().decode())
 	return int(ultraSoundValue.rstrip())
 
 def infrared(infraredNum):
 	ser.reset_input_buffer()
 	ser.write(("i %d \r" % (infraredNum)).encode())
-	infraredValue = (ser.readline().decode("ascii"))
+	infraredValue = (ser.readline().decode())
 	return infraredValue.rstrip()
 
 
 def rpm(rpmNum):
 	ser.reset_input_buffer()
 	ser.write(("r %f \r" % (rpmNum)).encode())
-	rpmValue = (ser.readline().decode("ascii"))
+	rpmValue = (ser.readline().decode())
 	return rpmValue.rstrip()
 
 def enablePID(pidValue):
