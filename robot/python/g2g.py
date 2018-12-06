@@ -47,7 +47,7 @@ def motorVelocity(m1,m2,m3):
 def encoder(encoderNum):
 	ser.reset_input_buffer()
 	ser.write(("e %d \r" % (encoderNum)).encode())
-	
+
 	encoderValue = (ser.readline().decode("ascii"))
 	return int(encoderValue.rstrip())
 
@@ -93,23 +93,23 @@ def move(xd,yd,thetad):
 
 	r = 0.03 # radius of each wheel [m]
 	l = 0.19 # distance from each wheel to the point of reference [m]
- 
+
 	xd_des = xd # velocity in the x-direction in the local frame [m/s]
 	yd_des = yd # velocity in the y-direction in the local frame [m/s]
 	thd_des = thetad # velocity in the x-direction in the local frame [rad/sa]
- 
+
 	vel_des = np.array([xd_des,yd_des,thd_des]).reshape(3,1)
- 
+
 	FK_M = (2*np.pi*r/60)*np.array([1/np.sqrt(3),0,-1/np.sqrt(3),-1/3,2/3,-1/3,-1/(3*l),-1/(3*l),-1/(3*l)]).reshape(3,3) # Forward kinematics matrix
- 
+
 	IK_M = np.linalg.inv(FK_M) # Inverse kinematics matrix
- 
+
 	motor_spd_vec = np.dot(IK_M,vel_des, out=None)
- 
+
 	wheel1RPM = motor_spd_vec[0] # motor 2 speed [rpm]
 	wheel0RPM = motor_spd_vec[1] # motor 1 speed [rpm]
 	wheel2RPM = motor_spd_vec[2] # motor 3 speed [rpm]
-	
+
 	maxAllowedSpeed = 150
 	if (abs(wheel1RPM) > maxAllowedSpeed or abs(wheel0RPM) > maxAllowedSpeed or abs(wheel2RPM) > maxAllowedSpeed):
 		maxRPM = max(abs(motor_spd_vec))
@@ -130,28 +130,28 @@ def odemetryCalc(xk,yk,thetak,l=0.19, N=2249, r=0.03):
 	global oldEncoder0
 	global oldEncoder1
 	global oldEncoder2
-	
+
 	newEncoder0 = encoder(0)
 	newEncoder1 = encoder(1)
 	newEncoder2 = encoder(2)
-	
+
 	deltaEncoder0 = newEncoder0 - oldEncoder0
 	deltaEncoder1 = newEncoder1 - oldEncoder1
 	deltaEncoder2 = newEncoder2 - oldEncoder2
-	
+
 	D0=(deltaEncoder0/N)*((2*np.pi*r))
 	D1=(deltaEncoder1/N)*((2*np.pi*r))
 	D2=(deltaEncoder2/N)*((2*np.pi*r))
 
 	kinematic_mat = np.array([1/np.sqrt(3),0,-1/np.sqrt(3),-1/3,2/3,-1/3,-1/(3*l),-1/(3*l),-1/(3*l)]).reshape(3,3)
-		
+
 	rotation_mat= np.array([np.cos(thetak),-np.sin(thetak),0,np.sin(thetak),np.cos(thetak),0,0,0,1]).reshape(3,3)
-	
+
 	#   diffrence in ticks (rpm1)
 	distance_mat = np.array([D1,D0,D2])[:,None]
-	
+
 	oldPos_mat = np.array([xk,yk,thetak])[:,None]
-	
+
 	# np.dot explanation https://stackoverflow.com/questions/21562986/numpy-matrix-vector-multiplication
 	kinxrot = np.dot(rotation_mat,kinematic_mat)
 	newPos_mat = oldPos_mat + np.dot(kinxrot,distance_mat)
@@ -162,29 +162,29 @@ def odemetryCalc(xk,yk,thetak,l=0.19, N=2249, r=0.03):
 
 	return  newPos_mat
 
-#Sets up odemetry for when the program starts, we need this because arduino stores the encoders 
-#and this will "Zero" it. 
+#Sets up odemetry for when the program starts, we need this because arduino stores the encoders
+#and this will "Zero" it.
 def initOdometry():
-	global oldEncoder0 
-	global oldEncoder1 
-	global oldEncoder2 
+	global oldEncoder0
+	global oldEncoder1
+	global oldEncoder2
 	oldEncoder0 = encoder(0)
 	oldEncoder1 = encoder(1)
 	oldEncoder2 = encoder(2)
-	
+
 def goToGoalTimed(dx,dy,dtheta,duration):
 	global current_x
 	global current_y
 	global current_theta
 	dt = 0.1
 	start = time.time()
-	
+
 	while time.time()-float(start) <= float(duration):
                 runLoop()
                 xc = current_x;yc=current_y;thetac = current_theta
 
 		inv_rotation_mat = np.array([np.cos(thetac), np.sin(thetac), 0, -np.sin(thetac), np.cos(thetac), 0, 0, 0, 1]).reshape(3,3)
-		
+
 		d = np.sqrt(np.power((yd-yc), 2) + np.power((xd-xc), 2))# calculate the distance from the goal
 
 		phi = math.atan2(yd-yc, xd-xc)#calculate the required angle to go to goal
@@ -195,46 +195,26 @@ def goToGoalTimed(dx,dy,dtheta,duration):
                  #              [np.sin(phi), np.cos(phi), 0],
                   #             [0,0,1]]
 		vel_local = np.dot(inv_rotation_mat, vel_global)#calculate the local velocity as input to the inverse kinematics algorithm
-		
+
 		time_left = duration - (time.time() - start) #duration - time elapsed = time left
 		vl_x = vel_local[0] / time_left
-		vl_y = vel_local[1] / time_left 
+		vl_y = vel_local[1] / time_left
 		vl_theta = vel_local[2] / time_left
-		
-		
+
+
 		move(vl_x,vl_y,vl_theta)
 		pose = odemetryCalc(current_x,current_y,current_theta)
 		current_x = pose.item(0)
 		current_y = pose.item(1)
-		current_theta = pose.item(2)		
+		current_theta = pose.item(2)
 		time.sleep(dt)
 		data_write = "x: "+str(pose[0][0])+"  y: "+str(pose[1][0])+"  theta: "+str(pose[2][0])
 		print(data_write)
 
 	move(0,0,0)
 
-minDistI = 58
-minDistU = 50
-
-def runLoop():
-        while True:
-                for dist in allUltra():
-                        if dist < minDistU:
-                                stop()
-                for dist in allInfra():
-                        if dist < minDistI:
-                                stop()
-
-
-def stop():
-        exit()
-        goToGoalTimed(0,0,0,0)
-        
-#def exitt():
- #       goToGoalTimed(0,0,0,0)		
-
 initOdometry()
-while True: 
+while True:
 	print("######### Enter your goal (x,y) :) ########## ")
 	xd = float(input("enter x desired: "))
 	yd = float(input("enter y desired: "))
