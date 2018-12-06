@@ -173,10 +173,13 @@ def initOdometry():
 	oldEncoder1 = encoder(1)
 	oldEncoder2 = encoder(2)
 
-def tooClose():
+def isTooClose():
         #is anything too close
 
         #if so then avoid
+
+		#maintained weighted alt solutions to randomly pick by how likely they have been to resolve
+		
 
 def isAtGoal(xd, yd):
         return xd is current_x and yd is current_y
@@ -184,7 +187,7 @@ def isAtGoal(xd, yd):
 def speed(duration, xd, xc, yd, yc):
         dist = np.sqrt(np.power((xd-xc), 2) + np.power(yd-yc, 2))
         timeleft = dist*2
-        
+
 def goToGoalTimed(dx,dy,dtheta,duration):
 	global current_x
 	global current_y
@@ -192,8 +195,8 @@ def goToGoalTimed(dx,dy,dtheta,duration):
 	dt = 0.1
 	start = time.time()
         speed = speed(duration, xd, current_x, yd, current_y)
-        while time.time()-float(start) <= float(speed): 
-                if tooClose():
+        while time.time()-float(start) <= float(speed):
+                if isTooClose():
                         break
                 xc = current_x
                 yc=current_y
