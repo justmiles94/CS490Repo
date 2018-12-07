@@ -30,8 +30,8 @@ kp = 1.2
 ki = 0
 kd = 0
 
-minDistU = 15
-minDistI = 25
+minDistU = 35
+minDistI = 50
 
 # This functions sends  pwm signals to the motor and reverses the direction if given negative
 # Example motor(255,0,0) would turn motor 0 on all the away and 1,2 off
@@ -58,7 +58,7 @@ def encoder(encoderNum):
 def ultrasound(ultraSoundNum):
 	ret = 0
 	while ret < 3:
-		print("get ultrasonic is " + str(ret))
+		#print("get ultrasonic is " + str(ret))
 		ser.reset_input_buffer()
 		ser.write(("u %d \r" % (ultraSoundNum)).encode())
 		ultraSoundValue = (ser.readline().decode())
