@@ -30,7 +30,8 @@ kp = 1.2
 ki = 0
 kd = 0
 
-minDistU = 35
+minDistU = 15
+minDistI = 25
 
 # This functions sends  pwm signals to the motor and reverses the direction if given negative
 # Example motor(255,0,0) would turn motor 0 on all the away and 1,2 off
@@ -64,14 +65,21 @@ def ultrasound(ultraSoundNum):
 		try:
 			ret = int(ultraSoundValue.rstrip())
 		except ValueError:
-			ret = -1
+			ret = ret + 1
 	return ret
 
 def infrared(infraredNum):
 	ser.reset_input_buffer()
 	ser.write(("i %d \r" % (infraredNum)).encode())
 	infraredValue = (ser.readline().decode())
-	return infraredValue.rstrip()
+	i = 3
+	while i > 0:
+		try:
+			return float(infraredValue.rstrip())
+		except:
+			print("pass")
+			i = i - 1
+	return 10
 
 def rpm(rpmNum):
 	ser.reset_input_buffer()
@@ -184,17 +192,20 @@ def isTooClose(v1_x, v1_y):
 	left1 = ultrasound(ultra['left1'])
 	back = ultrasound(ultra['back'])
 	print("Center: " +  str(center) + " Left: " + str(left) + " Left1: " + str(left1) + " Right: " + str(right) + " right1: " + str(right1) + " Back: " + str(back))
-
-	if (minDistU > center) or (minDistU > left1) or (minDistU > right1) or (minDistU > left) or (minDistU > right) or (minDistU > back):
+	ir0 = infrared(0)
+	ir1 = infrared(1)
+	ir2 = infrared(2)
+	ir3 = infrared(3)
+	if ((minDistI > ir1) and (minDistI > ir2)) or (minDistU > center) or (minDistU > left1) or (minDistU > right1) or (minDistU > left) or (minDistU > right) or (minDistU > back):
 		print("can't move forward")
-		if (minDistU < left) and (minDistU < left1):
+		if ((minDistI < ir0) and (minDistI < ir1)) or ((minDistU < left) and (minDistU < left1)):
 			print("is moving left")
 			v1_x=-v1_y
 			v1_y=v1_x
 			v1_theta=0
 			avoid(v1_x,v1_y,v1_theta)
 			return True
-		elif (minDistU < right) and (minDistU < right1):
+		elif ((minDistI < ir3) and (minDistI < ir2)) or ((minDistU < right) and (minDistU < right1)):
 			print("is moving right")
 			v1_x=v1_y
 			v1_y=-v1_x
