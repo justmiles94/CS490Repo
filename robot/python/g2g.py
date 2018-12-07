@@ -56,31 +56,38 @@ def encoder(encoderNum):
 	return int(encoderValue.rstrip())
 
 def ultrasound(ultraSoundNum):
-	ret = 0
-	while ret < 3:
-		#print("get ultrasonic is " + str(ret))
+	index = 10
+	while index > 0:
+		#print("scan ultra")
 		ser.reset_input_buffer()
 		ser.write(("u %d \r" % (ultraSoundNum)).encode())
 		ultraSoundValue = (ser.readline().decode())
 		try:
 			ret = int(ultraSoundValue.rstrip())
+			if ret > 3:
+				break
 		except ValueError:
-			ret = ret + 1
+			ret = 0
+		time.sleep(.1)
+		index = index - 1
 	return ret
 
 def infrared(infraredNum):
-	ser.reset_input_buffer()
-	ser.write(("i %d \r" % (infraredNum)).encode())
-	infraredValue = (ser.readline().decode())
-	i = 3
-	while i > 0:
+	index = 10
+	while index > 0:
+		#print("scan ir")
+		ser.reset_input_buffer()
+		ser.write(("i %d \r" % (infraredNum)).encode())
+		infraredValue = (ser.readline().decode())
 		try:
-			return float(infraredValue.rstrip())
+			val =  float(infraredValue.rstrip())
+			if val > 3:
+				return val
 		except:
-			print("pass")
-			i = i - 1
-	return 10
-
+			pass
+		time.sleep(.1)
+		index = index - 1
+		
 def rpm(rpmNum):
 	ser.reset_input_buffer()
 	ser.write(("r %f \r" % (rpmNum)).encode())
@@ -124,7 +131,7 @@ def move(xd,yd,thetad):
 		wheel1RPM = wheel1RPM/ratio
 		wheel2RPM = wheel2RPM/ratio
 
-	print("Wheel RPM: " +str(wheel0RPM)+", "+str(wheel1RPM)+ ", " +str(wheel2RPM))
+	#print("Wheel RPM: " +str(wheel0RPM[0])+", "+str(wheel1RPM[0])+ ", " +str(wheel2RPM[0]))
 
 	motorVelocity(int(wheel0RPM),int(wheel1RPM),int(wheel2RPM))
 
@@ -196,6 +203,9 @@ def isTooClose(v1_x, v1_y):
 	ir1 = infrared(1)
 	ir2 = infrared(2)
 	ir3 = infrared(3)
+
+	
+
 	if ((minDistI > ir1) and (minDistI > ir2)) or (minDistU > center) or (minDistU > left1) or (minDistU > right1) or (minDistU > left) or (minDistU > right) or (minDistU > back):
 		print("can't move forward")
 		if ((minDistI < ir0) and (minDistI < ir1)) or ((minDistU < left) and (minDistU < left1)):
@@ -221,11 +231,13 @@ def isTooClose(v1_x, v1_y):
 			return True
 		else:
 			print("I am stuck and don't know how to go on so I'll stop...")
+			print("v1_x: " + str(v1_x) + " v1_y: " + str(v1_y))
 			exit()
 	return False
 	#maintained weighted alt solutions to randomly pick by how likely they have been to resolve
 
 def avoid(vl_x,vl_y,vl_theta):
+	print("avoid some shit")
 	global current_x
 	global current_y
 	global current_theta
@@ -235,14 +247,14 @@ def avoid(vl_x,vl_y,vl_theta):
 	current_y = pose.item(1)
 	current_theta = pose.item(2)
 	time.sleep(1)
-	data_write = "x: "+str(pose[0][0])+"  y: "+str(pose[1][0])+"  theta: "+str(pose[2][0])
+	data_write = "x: "+str(pose[0][0])+" y: "+str(pose[1][0])+" theta: "+str(pose[2][0])
 	print(data_write)
 	move(0, 0, 0)
 	return True
 
 def isAtGoal(xd, yd):
 	val = False
-	error = 0.02
+	error = 0.1
 	return ((xd-error) <= current_x <= (xd+error)) and ((yd-error) <= current_y <= (yd+error))
 
 def speed(duration, xd, xc, yd, yc):
@@ -250,7 +262,7 @@ def speed(duration, xd, xc, yd, yc):
 	timeleft = dist*2
 	return timeleft
 
-def goToGoalTimed(dx,dy,dtheta,duration):
+def goToGoalTimed(xd,yd,dtheta,duration):
 	global current_x
 	global current_y
 	global current_theta
@@ -258,6 +270,7 @@ def goToGoalTimed(dx,dy,dtheta,duration):
 	start = time.time()
 	rate = speed(duration, xd, current_x, yd, current_y)
 	while time.time()-float(start) <= float(rate):
+		print("XD: " + str(xd) + " YD: " + str(yd))
 		xc = current_x
 		yc = current_y
 		thetac = current_theta
@@ -278,7 +291,6 @@ def goToGoalTimed(dx,dy,dtheta,duration):
 		vl_theta = vel_local[2] / time_left
 		if isTooClose(vl_x, vl_y):
 			break
-
 		move(vl_x,vl_y,vl_theta)
 		pose = odemetryCalc(current_x,current_y,current_theta)
 		current_x = pose.item(0)
@@ -298,3 +310,8 @@ while True:
 	duration = int(input("duration (s): "))
 	while (not isAtGoal(xd,yd)):
 		goToGoalTimed(xd,yd,thetad,duration)
+
+
+
+
+

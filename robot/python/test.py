@@ -25,13 +25,16 @@ while True:
 		ultraNum = int(input("Enter ultrasonic sensor number (0-5) >"))
 		while True:
 			print("Distance from sensor (cm): "+robot.ultrasound(ultraNum))
+			time.sleep(1)
 
 	elif control == 'i':
 		infraredNum = int(input("Enter infrared sensor number (0-3) >"))
 		while True:
 			print("Distance from sensor (cm): "+robot.infrared(infraredNum))
+			time.sleep(1)
 
 	elif control == 'e':
 		encoderNum = int(input("Enter encoder motor number (0-2) >"))
 		while True:
 			print("Encoder ticks: "+robot.encoder(encoderNum))
+			time.sleep(1)
