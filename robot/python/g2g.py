@@ -60,7 +60,9 @@ def ultrasound(ultraSoundNum):
 	while index > 0:
 		#print("scan ultra")
 		ser.reset_input_buffer()
+		#time.sleep(.01)
 		ser.write(("u %d \r" % (ultraSoundNum)).encode())
+		#time.sleep(.01)
 		ultraSoundValue = (ser.readline().decode())
 		try:
 			ret = int(ultraSoundValue.rstrip())
@@ -68,16 +70,22 @@ def ultrasound(ultraSoundNum):
 				break
 		except ValueError:
 			ret = 0
-		time.sleep(.1)
 		index = index - 1
-	return ret
+	try:
+		int(ret)	
+		return ret
+	except:
+		print("ultrasound error returning -1")
+		return -1
 
 def infrared(infraredNum):
 	index = 10
 	while index > 0:
 		#print("scan ir")
 		ser.reset_input_buffer()
+		#time.sleep(.01)
 		ser.write(("i %d \r" % (infraredNum)).encode())
+		#time.sleep(.01)
 		infraredValue = (ser.readline().decode())
 		try:
 			val =  float(infraredValue.rstrip())
@@ -85,8 +93,9 @@ def infrared(infraredNum):
 				return val
 		except:
 			pass
-		time.sleep(.1)
 		index = index - 1
+	print("infrared error returning -1")
+	return -1.0
 		
 def rpm(rpmNum):
 	ser.reset_input_buffer()
@@ -204,28 +213,35 @@ def isTooClose(v1_x, v1_y):
 	ir2 = infrared(2)
 	ir3 = infrared(3)
 
-	
 
 	if ((minDistI > ir1) and (minDistI > ir2)) or (minDistU > center) or (minDistU > left1) or (minDistU > right1) or (minDistU > left) or (minDistU > right) or (minDistU > back):
 		print("can't move forward")
-		if ((minDistI < ir0) and (minDistI < ir1)) or ((minDistU < left) and (minDistU < left1)):
+		if ((minDistU < right1) and (minDistU < left1) and (minDistU < center)) or ((minDistI < ir1) and (minDistI < ir2)):
+			print("is moving straight")
+			v1_x=0.3
+			v1_y=0
+			v1_theta=0
+			avoid(v1_x,v1_y,v1_theta)
+			return True
+
+		elif ((minDistI < ir0) and (minDistI < ir1)) or ((minDistU < left) and (minDistU < left1)):
 			print("is moving left")
-			v1_x=-v1_y
-			v1_y=v1_x
+			v1_x=0
+			v1_y=0.3
 			v1_theta=0
 			avoid(v1_x,v1_y,v1_theta)
 			return True
 		elif ((minDistI < ir3) and (minDistI < ir2)) or ((minDistU < right) and (minDistU < right1)):
 			print("is moving right")
-			v1_x=v1_y
-			v1_y=-v1_x
+			v1_x=0
+			v1_y=-0.3			
 			v1_theta=0
 			avoid(v1_x,v1_y,v1_theta)
 			return True
 		elif minDistU < back:
 			print("is moving back")
-			v1_x=-v1_x
-			v1_y=-v1_y
+			v1_x=-0.3
+			v1_y=0
 			v1_theta=0
 			avoid(v1_x,v1_y,v1_theta)
 			return True
@@ -237,7 +253,7 @@ def isTooClose(v1_x, v1_y):
 	#maintained weighted alt solutions to randomly pick by how likely they have been to resolve
 
 def avoid(vl_x,vl_y,vl_theta):
-	print("avoid some shit")
+	print("avoid some sheet")
 	global current_x
 	global current_y
 	global current_theta
@@ -246,7 +262,7 @@ def avoid(vl_x,vl_y,vl_theta):
 	current_x = pose.item(0)
 	current_y = pose.item(1)
 	current_theta = pose.item(2)
-	time.sleep(1)
+	#time.sleep(.2)
 	data_write = "x: "+str(pose[0][0])+" y: "+str(pose[1][0])+" theta: "+str(pose[2][0])
 	print(data_write)
 	move(0, 0, 0)
@@ -270,7 +286,7 @@ def goToGoalTimed(xd,yd,dtheta,duration):
 	start = time.time()
 	rate = speed(duration, xd, current_x, yd, current_y)
 	while time.time()-float(start) <= float(rate):
-		print("XD: " + str(xd) + " YD: " + str(yd))
+		print("XD: " + str(xd) + " YD:. " + str(yd))
 		xc = current_x
 		yc = current_y
 		thetac = current_theta
