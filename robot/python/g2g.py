@@ -30,7 +30,7 @@ kp = 1.2
 ki = 0
 kd = 0
 
-minDistU = 50
+minDistU = 35
 
 # This functions sends  pwm signals to the motor and reverses the direction if given negative
 # Example motor(255,0,0) would turn motor 0 on all the away and 1,2 off
@@ -55,13 +55,17 @@ def encoder(encoderNum):
 	return int(encoderValue.rstrip())
 
 def ultrasound(ultraSoundNum):
-	ser.reset_input_buffer()
-	ser.write(("u %d \r" % (ultraSoundNum)).encode())
-	ultraSoundValue = (ser.readline().decode())
-	try:
-		return int(ultraSoundValue.rstrip())
-	except ValueError:
-		return -1
+	ret = 0
+	while ret < 3:
+		print("get ultrasonic is " + str(ret))
+		ser.reset_input_buffer()
+		ser.write(("u %d \r" % (ultraSoundNum)).encode())
+		ultraSoundValue = (ser.readline().decode())
+		try:
+			ret = int(ultraSoundValue.rstrip())
+		except ValueError:
+			ret = -1
+	return ret
 
 def infrared(infraredNum):
 	ser.reset_input_buffer()
@@ -112,9 +116,7 @@ def move(xd,yd,thetad):
 		wheel1RPM = wheel1RPM/ratio
 		wheel2RPM = wheel2RPM/ratio
 
-	print("Wheel0 RPM: " +str(wheel0RPM))
-	print("Wheel1 RPM: " +str(wheel1RPM))
-	print("Wheel2 RPM: " +str(wheel2RPM))
+	print("Wheel RPM: " +str(wheel0RPM)+", "+str(wheel1RPM)+ ", " +str(wheel2RPM))
 
 	motorVelocity(int(wheel0RPM),int(wheel1RPM),int(wheel2RPM))
 
@@ -171,7 +173,7 @@ ultra['right1']= 4
 ultra['left'] = 1
 ultra['left1']= 2
 ultra['back'] = 0
-def isTooClose(vl_x, vl_y):
+def isTooClose(v1_x, v1_y):
         #is anything too close
 	#get array of ultra SENSORS
 	#if middle is less than destination
@@ -190,20 +192,21 @@ def isTooClose(vl_x, vl_y):
 			v1_x=-v1_y
 			v1_y=v1_x
 			v1_theta=0
-			avoid(vl_x,vl_y,vl_theta)
+			avoid(v1_x,v1_y,v1_theta)
+			return True
 		elif (minDistU < right) and (minDistU < right1):
 			print("is moving right")
 			v1_x=v1_y
 			v1_y=-v1_x
 			v1_theta=0
-			avoid(vl_x,vl_y,vl_theta)
+			avoid(v1_x,v1_y,v1_theta)
 			return True
 		elif minDistU < back:
 			print("is moving back")
 			v1_x=-v1_x
 			v1_y=-v1_y
 			v1_theta=0
-			avoid(vl_x,vl_y,vl_theta)
+			avoid(v1_x,v1_y,v1_theta)
 			return True
 		else:
 			print("I am stuck and don't know how to go on so I'll stop...")
@@ -212,6 +215,9 @@ def isTooClose(vl_x, vl_y):
 	#maintained weighted alt solutions to randomly pick by how likely they have been to resolve
 
 def avoid(vl_x,vl_y,vl_theta):
+	global current_x
+	global current_y
+	global current_theta
 	move(vl_x,vl_y,vl_theta)
 	pose = odemetryCalc(current_x,current_y,current_theta)
 	current_x = pose.item(0)
@@ -225,9 +231,8 @@ def avoid(vl_x,vl_y,vl_theta):
 
 def isAtGoal(xd, yd):
 	val = False
-	val = xd is current_x and yd is current_y
-	print(str(val))	
-	return val
+	error = 0.02
+	return ((xd-error) <= current_x <= (xd+error)) and ((yd-error) <= current_y <= (yd+error))
 
 def speed(duration, xd, xc, yd, yc):
 	dist = np.sqrt(np.power((xd-xc), 2) + np.power(yd-yc, 2))
