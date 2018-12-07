@@ -167,33 +167,38 @@ def initOdometry():
 ultra = {}
 ultra['center'] = 3
 ultra['right'] = 5
+ultra['right1']= 4
 ultra['left'] = 1
+ultra['left1']= 2
 ultra['back'] = 0
-def isTooClose(xd, yd):
+def isTooClose(vl_x, vl_y):
         #is anything too close
 	#get array of ultra SENSORS
 	#if middle is less than destination
 	center = ultrasound(ultra['center'])
 	right = ultrasound(ultra['right'])
+	right1 = ultrasound(ultra['right1'])
 	left = ultrasound(ultra['left'])
+	left1 = ultrasound(ultra['left1'])
 	back = ultrasound(ultra['back'])
-	print("Center: " +  center + " Left: " + left + " Right: " + right + " Back: " + back)
-	if minDistU > center:
+	print("Center: " +  str(center) + " Left: " + str(left) + " Left1: " + str(left1) + " Right: " + str(right) + " right1: " + str(right1) + " Back: " + str(back))
+
+	if (minDistU > center) or (minDistU > left1) or (minDistU > right1) or (minDistU > left) or (minDistU > right) or (minDistU > back):
 		print("can't move forward")
-		if minDistU > left:
+		if (minDistU < left) and (minDistU < left1):
 			print("is moving left")
 			v1_x=-v1_y
 			v1_y=v1_x
 			v1_theta=0
 			avoid(vl_x,vl_y,vl_theta)
-		elif minDistU > right:
+		elif (minDistU < right) and (minDistU < right1):
 			print("is moving right")
 			v1_x=v1_y
 			v1_y=-v1_x
 			v1_theta=0
 			avoid(vl_x,vl_y,vl_theta)
 			return True
-		elif minDistU > back:
+		elif minDistU < back:
 			print("is moving back")
 			v1_x=-v1_x
 			v1_y=-v1_y
@@ -212,7 +217,7 @@ def avoid(vl_x,vl_y,vl_theta):
 	current_x = pose.item(0)
 	current_y = pose.item(1)
 	current_theta = pose.item(2)
-	time.sleep(2)
+	time.sleep(1)
 	data_write = "x: "+str(pose[0][0])+"  y: "+str(pose[1][0])+"  theta: "+str(pose[2][0])
 	print(data_write)
 	move(0, 0, 0)
@@ -227,6 +232,7 @@ def isAtGoal(xd, yd):
 def speed(duration, xd, xc, yd, yc):
 	dist = np.sqrt(np.power((xd-xc), 2) + np.power(yd-yc, 2))
 	timeleft = dist*2
+	return timeleft
 
 def goToGoalTimed(dx,dy,dtheta,duration):
 	global current_x
@@ -234,12 +240,10 @@ def goToGoalTimed(dx,dy,dtheta,duration):
 	global current_theta
 	dt = 0.1
 	start = time.time()
-	speed = speed(duration, xd, current_x, yd, current_y)
-	while time.time()-float(start) <= float(speed):
-		if isTooClose():
-			break
+	rate = speed(duration, xd, current_x, yd, current_y)
+	while time.time()-float(start) <= float(rate):
 		xc = current_x
-		yc=current_y
+		yc = current_y
 		thetac = current_theta
 
 		inv_rotation_mat = np.array([np.cos(thetac), np.sin(thetac), 0, -np.sin(thetac), np.cos(thetac), 0, 0, 0, 1]).reshape(3,3)
@@ -252,10 +256,12 @@ def goToGoalTimed(dx,dy,dtheta,duration):
 
 		vel_local = np.dot(inv_rotation_mat, vel_global)#calculate the local velocity as input to the inverse kinematics algorithm
 
-		time_left = speed - (time.time() - start) #duration - time elapsed = time left
+		time_left = rate - (time.time() - start) #duration - time elapsed = time left
 		vl_x = vel_local[0] / time_left
 		vl_y = vel_local[1] / time_left
 		vl_theta = vel_local[2] / time_left
+		if isTooClose(vl_x, vl_y):
+			break
 
 		move(vl_x,vl_y,vl_theta)
 		pose = odemetryCalc(current_x,current_y,current_theta)
